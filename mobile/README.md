@@ -37,14 +37,24 @@ lib/
 - **Migrations.** Bump `schemaVersion`, add a step to `_upgrades` in `app_database.dart`, then run `dart run drift_dev make-migrations` to snapshot the schema into `drift_schemas/`.
 - **Reactive UI.** Drift `watch()` streams feed Riverpod `StreamProvider`s, so every screen updates as soon as its data changes.
 
+## Home Screen widgets
+
+Four native WidgetKit widgets live in `ios/DevSpaceWidgets/` (SwiftUI), each in small, medium and large: **Today**, **Productivity**, **Quick Capture** and **Deadlines**.
+
+- **Data.** Whenever tasks, projects, the workspace or the date change, the app writes a JSON snapshot (`lib/features/widgets/widget_snapshot.dart`) to the App Group `group.tech.magadh.devspace` and reloads WidgetKit. Widgets recompute Today and Overdue at each midnight, so they stay right even if the app doesn't run.
+- **Actions.** Ticking a task on a widget runs an App Intent without opening the app: the widget updates at once and the change is queued in the App Group. The app applies queued actions on launch and whenever it returns to the foreground.
+- **Links.** `devspace://open/<tab>[/task/<id>]`, `devspace://project/<id>`, `devspace://capture/task|project`. Siri and Shortcuts get **Add Task** and **Show Today**.
+- **Xcode target.** `tool/add_widget_target.rb` adds or updates the extension target (it is idempotent): `GEM_HOME=$(brew --prefix cocoapods)/libexec ruby tool/add_widget_target.rb`. On a real device, both targets need your team selected and the App Group enabled.
+
 ## Roadmap
 
 | Phase | Scope | Status |
 | --- | --- | --- |
 | 1 | Project setup, design system, navigation, local database, workspace management | Done |
 | 2 | Home screen, task management, task detail | Done |
-| 3 | WidgetKit widgets, App Group, App Intents, deep links | Next |
-| 4 | Notes, rich-text editor, autosave | |
+| 3 | WidgetKit widgets, App Group, App Intents, deep links | Done |
+
+| 4 | Notes, rich-text editor, autosave | Next |
 | 5 | Projects, documentation | |
 | 6 | Drawing and whiteboard | |
 | 7 | Global search, notifications, settings, performance, tests | |
