@@ -52,7 +52,10 @@ class _ProjectEditorState extends ConsumerState<_ProjectEditor> {
     super.initState();
     final p = widget.project;
     if (p != null) {
-      ref.read(recentRepositoryProvider).touch(workspaceId: p.workspaceId, type: EntityType.project, entityId: p.id).ignore();
+      ref
+          .read(recentRepositoryProvider)
+          .touch(workspaceId: p.workspaceId, type: EntityType.project, entityId: p.id)
+          .ignore();
     }
   }
 
@@ -160,25 +163,33 @@ class _ProjectEditorState extends ConsumerState<_ProjectEditor> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 for (final c in ProjectColor.values)
-                  Semantics(
-                    button: true,
-                    selected: c == _color,
-                    label: '${c.name} colour',
-                    child: GestureDetector(
-                      onTap: () {
-                        Haptics.selection();
-                        setState(() => _color = c);
-                      },
-                      child: AnimatedContainer(
-                        duration: DSMotion.medium,
-                        width: 34,
-                        height: 34,
-                        padding: const EdgeInsets.all(3),
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(color: c == _color ? projectColor(context, c) : Colors.transparent, width: 2),
+                  DSTooltip(
+                    message: '${c.name[0].toUpperCase()}${c.name.substring(1)}',
+                    child: Semantics(
+                      button: true,
+                      selected: c == _color,
+                      label: '${c.name} colour',
+                      child: GestureDetector(
+                        onTap: () {
+                          Haptics.selection();
+                          setState(() => _color = c);
+                        },
+                        child: AnimatedContainer(
+                          duration: DSMotion.medium,
+                          width: 34,
+                          height: 34,
+                          padding: const EdgeInsets.all(3),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: c == _color ? projectColor(context, c) : Colors.transparent,
+                              width: 2,
+                            ),
+                          ),
+                          child: Container(
+                            decoration: BoxDecoration(color: projectColor(context, c), shape: BoxShape.circle),
+                          ),
                         ),
-                        child: Container(decoration: BoxDecoration(color: projectColor(context, c), shape: BoxShape.circle)),
                       ),
                     ),
                   ),
@@ -219,14 +230,28 @@ class _ProjectEditorState extends ConsumerState<_ProjectEditor> {
                     selected: _priority,
                     choices: [
                       for (final p in Priority.values.reversed)
-                        DSChoice(value: p, label: p.label, leading: PriorityIcon(priority: p, size: 18)),
+                        DSChoice(
+                          value: p,
+                          label: p.label,
+                          leading: PriorityIcon(priority: p, size: 18),
+                        ),
                     ],
                   );
                   if (c != null) setState(() => _priority = c.value);
                 },
               ),
-              DSRow(title: 'Start Date', value: _dateLabel(_startDate), showChevron: true, onTap: () => _pickDate(start: true)),
-              DSRow(title: 'Due Date', value: _dateLabel(_dueDate), showChevron: true, onTap: () => _pickDate(start: false)),
+              DSRow(
+                title: 'Start Date',
+                value: _dateLabel(_startDate),
+                showChevron: true,
+                onTap: () => _pickDate(start: true),
+              ),
+              DSRow(
+                title: 'Due Date',
+                value: _dateLabel(_dueDate),
+                showChevron: true,
+                onTap: () => _pickDate(start: false),
+              ),
             ],
           ),
           Padding(

@@ -5,6 +5,7 @@ import '../../../app/theme/app_theme.dart';
 import '../../../core/models/enums.dart';
 import '../../../core/models/task.dart';
 import '../../../core/services/haptics.dart';
+import '../../../core/widgets/widgets.dart';
 import '../task_actions.dart';
 import '../task_editor_sheet.dart';
 import 'task_tile.dart';
@@ -93,11 +94,14 @@ class _Column extends StatelessWidget {
                     Text('${tasks.length}', style: context.type.subheadline.copyWith(color: colors.textTertiary)),
                     const Spacer(),
                     if (status != TaskStatus.completed)
-                      CupertinoButton(
-                        padding: EdgeInsets.zero,
-                        minimumSize: const Size.square(kMinInteractiveDimensionCupertino),
-                        onPressed: () => showNewTaskSheet(context, status: status),
-                        child: Icon(CupertinoIcons.plus, size: 20, color: colors.accent, semanticLabel: 'Add to ${status.label}'),
+                      DSTooltip(
+                        message: 'Add to ${status.label}',
+                        child: CupertinoButton(
+                          padding: EdgeInsets.zero,
+                          minimumSize: const Size.square(kMinInteractiveDimensionCupertino),
+                          onPressed: () => showNewTaskSheet(context, status: status),
+                          child: Icon(CupertinoIcons.plus, size: 20, color: colors.accent, semanticLabel: 'Add to ${status.label}'),
+                        ),
                       ),
                   ],
                 ),

@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import '../../app/theme/app_theme.dart';
+import 'ds_tooltip.dart';
 
 /// Standard screen: native large-title navigation bar that collapses on scroll,
 /// with content supplied as slivers.
@@ -102,14 +103,17 @@ class DSNavIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Semantics(
-      label: semanticLabel,
-      button: true,
-      child: CupertinoButton(
-        padding: EdgeInsets.zero,
-        minimumSize: const Size.square(kMinInteractiveDimensionCupertino),
-        onPressed: onPressed,
-        child: Icon(icon, size: 24, color: context.colors.accent),
+    return DSTooltip(
+      message: semanticLabel,
+      child: Semantics(
+        label: semanticLabel,
+        button: true,
+        child: CupertinoButton(
+          padding: EdgeInsets.zero,
+          minimumSize: const Size.square(kMinInteractiveDimensionCupertino),
+          onPressed: onPressed,
+          child: Icon(icon, size: 24, color: context.colors.accent),
+        ),
       ),
     );
   }

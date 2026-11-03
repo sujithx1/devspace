@@ -128,4 +128,17 @@ void main() {
     expect(find.text('Active Projects'), findsOneWidget);
     await finish(tester);
   });
+
+  testWidgets('Icon-only buttons show their name when held', (tester) async {
+    await pumpScreen(tester, const TasksScreen());
+    expect(find.text('Sort and filter'), findsNothing);
+    await tester.longPress(find.byIcon(CupertinoIcons.line_horizontal_3_decrease_circle));
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.text('Sort and filter'), findsOneWidget);
+    // It hides itself again.
+    await tester.pump(const Duration(seconds: 3));
+    await tester.pumpAndSettle();
+    expect(find.text('Sort and filter'), findsNothing);
+    await finish(tester);
+  });
 }

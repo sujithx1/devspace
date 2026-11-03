@@ -8,3 +8,4 @@ export 'ds_sheet.dart';
 export 'ds_swipeable.dart';
 export 'ds_text_field.dart';
 export 'ds_toast.dart';
+export 'ds_tooltip.dart';

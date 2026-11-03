@@ -116,10 +116,10 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
     return DSPage(
       title: '',
       largeTitle: false,
-      trailing: CupertinoButton(
-        padding: EdgeInsets.zero,
+      trailing: DSNavIconButton(
+        icon: CupertinoIcons.ellipsis_circle,
+        semanticLabel: 'Task actions',
         onPressed: () => showTaskActions(context, ref, task),
-        child: Icon(CupertinoIcons.ellipsis_circle, color: colors.accent, semanticLabel: 'Task actions'),
       ),
       slivers: [
         SliverToBoxAdapter(

@@ -50,6 +50,20 @@ abstract final class AppTheme {
         labelMedium: type.footnote,
         labelSmall: type.caption2,
       ),
+      tooltipTheme: TooltipThemeData(
+        // Most icon-only buttons live in the navigation bar, so show below
+        // them; Flutter flips above when there's no room.
+        preferBelow: true,
+        verticalOffset: 26,
+        waitDuration: const Duration(milliseconds: 400),
+        showDuration: const Duration(milliseconds: 1500),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: c.textPrimary.withValues(alpha: 0.92),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        textStyle: type.footnote.copyWith(color: c.background, fontWeight: FontWeight.w600),
+      ),
       pageTransitionsTheme: const PageTransitionsTheme(
         builders: {TargetPlatform.iOS: CupertinoPageTransitionsBuilder()},
       ),

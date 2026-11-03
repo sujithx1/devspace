@@ -76,13 +76,16 @@ class _WorkspaceRow extends ConsumerWidget {
             duration: DSMotion.medium,
             child: Icon(CupertinoIcons.checkmark_alt, color: colors.accent, size: 22),
           ),
-          CupertinoButton(
-            padding: const EdgeInsets.only(left: DSSpacing.xs),
-            minimumSize: const Size.square(kMinInteractiveDimensionCupertino),
-            onPressed: () => context.push(Routes.workspace(workspace.id)),
-            child: Semantics(
-              label: 'Workspace details',
-              child: Icon(CupertinoIcons.info_circle, color: colors.accent, size: 22),
+          DSTooltip(
+            message: 'Workspace details',
+            child: CupertinoButton(
+              padding: const EdgeInsets.only(left: DSSpacing.xs),
+              minimumSize: const Size.square(kMinInteractiveDimensionCupertino),
+              onPressed: () => context.push(Routes.workspace(workspace.id)),
+              child: Semantics(
+                label: 'Workspace details',
+                child: Icon(CupertinoIcons.info_circle, color: colors.accent, size: 22),
+              ),
             ),
           ),
         ],
