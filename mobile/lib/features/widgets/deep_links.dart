@@ -6,13 +6,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/providers/task_providers.dart';
 import '../../app/providers/workspace_providers.dart';
 import '../../app/router.dart';
+import '../../core/utils/dates.dart';
 import '../projects/project_editor_sheet.dart';
 import '../tasks/task_editor_sheet.dart';
 
 /// `devspace://` links used by widgets and Shortcuts:
 ///
 /// - `devspace://open/<path>` opens a screen, e.g. `open/tasks/task/<id>`
-/// - `devspace://capture/task` and `capture/project` open a "new" sheet
+/// - `devspace://capture/task` and `capture/project` open a "new" sheet;
+///   `capture/task?due=today|tomorrow&project=<id>` pre-fills the task
 /// - `devspace://project/<id>` opens a project
 abstract final class DeepLinks {
   static const scheme = 'devspace';
@@ -45,7 +47,19 @@ abstract final class DeepLinks {
         if (kind == 'project') {
           await showProjectEditor(context);
         } else if (kind == 'task') {
-          await showNewTaskSheet(context, dueDate: ref.read(todayProvider));
+          final today = ref.read(todayProvider);
+          final projectId = uri.queryParameters['project'];
+          await showNewTaskSheet(
+            context,
+            dueDate: switch (uri.queryParameters['due']) {
+              'tomorrow' => Dates.addDays(today, 1),
+              'none' => null,
+              // A task for a project has no date unless one is asked for.
+              null when projectId != null => null,
+              _ => today,
+            },
+            projectId: ref.read(projectsByIdProvider).containsKey(projectId) ? projectId : null,
+          );
         }
       case 'project':
         final id = uri.pathSegments.firstOrNull;
