@@ -42,22 +42,23 @@ void main() {
         task('overdue', due: '2026-10-30'),
         task('today', due: '2026-11-04', projectId: 'p'),
         task('soon', due: '2026-11-15'),
-        task('far', due: '2026-12-25'), // beyond two weeks
+        task('far', due: '2026-12-25'),
         task('undated'),
         task('doing', status: TaskStatus.inProgress),
         task('done-today', status: TaskStatus.completed, completedAt: DateTime(2026, 11, 4, 8)),
-        task('done-long-ago', status: TaskStatus.completed, completedAt: DateTime(2026, 10, 1)),
+        task('done-long-ago', status: TaskStatus.completed, completedAt: DateTime(2026, 7, 1)),
       ],
       projects: [project],
       now: now,
     );
     final ids = [for (final t in snapshot['tasks'] as List) (t as Map)['id']];
 
-    test('keeps what the widgets need and nothing more', () {
-      expect(ids, containsAll(['overdue', 'today', 'soon', 'doing', 'done-today']));
-      expect(ids, isNot(contains('far')));
-      expect(ids, isNot(contains('undated')));
+    test('includes every open task and recent completions', () {
+      expect(ids, containsAll(['overdue', 'today', 'soon', 'far', 'undated', 'doing', 'done-today']));
+      // Completed more than 12 weeks ago.
       expect(ids, isNot(contains('done-long-ago')));
+      // Most pressing first: in progress, then by due date.
+      expect(ids.first, 'doing');
     });
 
     test('uses the shape the Swift models decode', () {
@@ -67,11 +68,13 @@ void main() {
       expect(today['due'], '2026-11-04');
       expect(today['priority'], 'medium');
       expect(today['status'], 'todo');
+      expect(today['projectId'], 'p');
       expect(today['project'], 'Launch');
       expect(today['projectColor'], 'violet');
       final p = (snapshot['projects'] as List).single as Map;
       expect(p['progress'], 0.25);
       expect(p['openTasks'], 3);
+      expect(p['totalTasks'], 4);
     });
   });
 
@@ -92,10 +95,33 @@ void main() {
     });
   });
 
-  test('WidgetAction parses queued JSON', () {
-    expect(WidgetAction.fromJson({'type': 'complete', 'taskId': 'a', 'completed': false}), isA<CompleteTaskAction>());
-    expect((WidgetAction.fromJson({'type': 'complete', 'taskId': 'a'}) as CompleteTaskAction).completed, isTrue);
-    expect(WidgetAction.fromJson({'type': 'url', 'url': 'devspace://capture/task'}), isA<OpenUrlAction>());
-    expect(WidgetAction.fromJson({'type': 'mystery'}), isNull);
+  group('WidgetAction.fromJson', () {
+    test('reads task updates from widgets', () {
+      final a = WidgetAction.fromJson({'type': 'update', 'taskId': 'a', 'status': 'in_progress', 'due': '2026-11-05'});
+      expect(a, isA<UpdateTaskAction>());
+      a as UpdateTaskAction;
+      expect(a.status, TaskStatus.inProgress);
+      expect(a.dueDate, '2026-11-05');
+    });
+
+    test('ignores bad fields', () {
+      final a = WidgetAction.fromJson({'type': 'update', 'taskId': 'a', 'status': 'nope', 'due': 'tomorrow'}) as UpdateTaskAction;
+      expect(a.status, isNull);
+      expect(a.dueDate, isNull);
+      expect(WidgetAction.fromJson({'type': 'update'}), isNull);
+      expect(WidgetAction.fromJson({'type': 'mystery'}), isNull);
+    });
+
+    test('still reads version 1 completions', () {
+      final done = WidgetAction.fromJson({'type': 'complete', 'taskId': 'a'}) as UpdateTaskAction;
+      expect(done.status, TaskStatus.completed);
+      final undone = WidgetAction.fromJson({'type': 'complete', 'taskId': 'a', 'completed': false}) as UpdateTaskAction;
+      expect(undone.status, TaskStatus.todo);
+    });
+
+    test('reads links', () {
+      final a = WidgetAction.fromJson({'type': 'url', 'url': 'devspace://capture/task?due=tomorrow'});
+      expect((a as OpenUrlAction).uri.queryParameters['due'], 'tomorrow');
+    });
   });
 }

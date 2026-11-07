@@ -6,10 +6,37 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/providers/core_providers.dart';
 import '../../app/providers/task_providers.dart';
 import '../../app/providers/workspace_providers.dart';
-import '../../core/models/enums.dart';
+import '../../core/repositories/task_repository.dart';
+import '../../core/services/task_service.dart';
 import '../../core/services/widget_bridge.dart';
 import 'deep_links.dart';
 import 'widget_snapshot.dart';
+
+/// Applies a task change made on a widget. Returns false (after reporting the
+/// error) if it couldn't be saved, so one bad action can't block the rest.
+Future<bool> applyWidgetTaskUpdate(
+  TaskRepository repo,
+  TaskService service,
+  UpdateTaskAction action,
+) async {
+  try {
+    var task = await repo.get(action.taskId);
+    if (task == null) return true; // deleted in the app since
+    final dueDate = action.dueDate;
+    if (dueDate != null && task.dueDate != dueDate) {
+      task = await repo.update(task.copyWith(dueDate: dueDate));
+    }
+    final status = action.status;
+    if (status != null && task.status != status) {
+      // The service also schedules the next occurrence of repeating tasks.
+      await service.setStatus(task, status);
+    }
+    return true;
+  } catch (e, stack) {
+    FlutterError.reportError(FlutterErrorDetails(exception: e, stack: stack, library: 'widget sync'));
+    return false;
+  }
+}
 
 final widgetBridgeProvider = Provider<WidgetBridge>((ref) => WidgetBridge());
 
@@ -58,10 +85,8 @@ final widgetSyncProvider = Provider<void>((ref) {
     try {
       for (final action in await bridge.takeActions()) {
         switch (action) {
-          case CompleteTaskAction(:final taskId, :final completed):
-            final task = await ref.read(taskRepositoryProvider).get(taskId);
-            if (task == null || task.isCompleted == completed) continue;
-            await ref.read(taskServiceProvider).setStatus(task, completed ? TaskStatus.completed : TaskStatus.todo);
+          case UpdateTaskAction():
+            await applyWidgetTaskUpdate(ref.read(taskRepositoryProvider), ref.read(taskServiceProvider), action);
           case OpenUrlAction(:final uri):
             await DeepLinks.handle(uri, ref);
         }

@@ -4,26 +4,43 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
+import '../models/enums.dart';
+
 /// Something the user did outside the app that the app must apply: a task
-/// ticked on a widget, or a deep link from a widget, shortcut or URL.
+/// changed on a widget, or a deep link from a widget, control, shortcut or URL.
 sealed class WidgetAction {
   const WidgetAction();
 
-  static WidgetAction? fromJson(Map<String, dynamic> json) => switch (json['type']) {
-    'complete' when json['taskId'] is String => CompleteTaskAction(
-      taskId: json['taskId'] as String,
-      completed: json['completed'] != false,
-    ),
-    'url' when json['url'] is String => OpenUrlAction(Uri.parse(json['url'] as String)),
-    _ => null,
-  };
+  static WidgetAction? fromJson(Map<String, dynamic> json) {
+    final taskId = json['taskId'];
+    return switch (json['type']) {
+      // Version 1 widgets only ticked tasks.
+      'complete' when taskId is String => UpdateTaskAction(
+        taskId: taskId,
+        status: json['completed'] == false ? TaskStatus.todo : TaskStatus.completed,
+      ),
+      'update' when taskId is String => UpdateTaskAction(
+        taskId: taskId,
+        status: TaskStatus.values.where((s) => s.wire == json['status']).firstOrNull,
+        dueDate: json['due'] is String && _isoDate.hasMatch(json['due'] as String) ? json['due'] as String : null,
+      ),
+      'url' when json['url'] is String => OpenUrlAction(Uri.parse(json['url'] as String)),
+      _ => null,
+    };
+  }
+
+  static final _isoDate = RegExp(r'^\d{4}-\d{2}-\d{2}$');
 }
 
-final class CompleteTaskAction extends WidgetAction {
-  const CompleteTaskAction({required this.taskId, required this.completed});
+/// A task ticked, started, paused or rescheduled on a widget.
+final class UpdateTaskAction extends WidgetAction {
+  const UpdateTaskAction({required this.taskId, this.status, this.dueDate});
 
   final String taskId;
-  final bool completed;
+  final TaskStatus? status;
+
+  /// New due day, `YYYY-MM-DD`.
+  final String? dueDate;
 }
 
 final class OpenUrlAction extends WidgetAction {

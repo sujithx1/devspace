@@ -6,6 +6,8 @@ import 'package:devspace/core/repositories/recent_repository.dart';
 import 'package:devspace/core/repositories/task_repository.dart';
 import 'package:devspace/core/repositories/workspace_repository.dart';
 import 'package:devspace/core/services/task_service.dart';
+import 'package:devspace/core/services/widget_bridge.dart';
+import 'package:devspace/features/widgets/widget_sync.dart';
 import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -142,5 +144,32 @@ void main() {
     expect(json.containsKey('subtaskCount'), isFalse);
     // Keep the import of drift's Value used for clarity in other tests.
     expect(const Value(1).present, isTrue);
+  });
+
+  group('widget actions', () {
+    test('tick, start and reschedule are saved', () async {
+      final t = await tasks.create(workspaceId: ws, title: 'From widget', dueDate: '2026-11-01');
+      expect(await applyWidgetTaskUpdate(tasks, service, UpdateTaskAction(taskId: t.id, dueDate: '2026-11-04')), isTrue);
+      expect((await tasks.get(t.id))!.dueDate, '2026-11-04');
+
+      await applyWidgetTaskUpdate(tasks, service, UpdateTaskAction(taskId: t.id, status: TaskStatus.inProgress));
+      expect((await tasks.get(t.id))!.status, TaskStatus.inProgress);
+
+      await applyWidgetTaskUpdate(tasks, service, UpdateTaskAction(taskId: t.id, status: TaskStatus.completed));
+      final done = await tasks.get(t.id);
+      expect(done!.isCompleted, isTrue);
+      expect(done.completedAt, isNotNull);
+    });
+
+    test('completing a repeating task on a widget schedules the next one', () async {
+      final t = await tasks.create(workspaceId: ws, title: 'Daily', dueDate: '2026-11-04', recurrence: Recurrence.daily);
+      await applyWidgetTaskUpdate(tasks, service, UpdateTaskAction(taskId: t.id, status: TaskStatus.completed));
+      final all = await tasks.watchByWorkspace(ws).first;
+      expect(all.where((x) => x.title == 'Daily' && x.isOpen).single.dueDate, '2026-11-05');
+    });
+
+    test('a task deleted in the app is skipped', () async {
+      expect(await applyWidgetTaskUpdate(tasks, service, const UpdateTaskAction(taskId: 'gone', status: TaskStatus.completed)), isTrue);
+    });
   });
 }

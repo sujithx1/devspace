@@ -7,39 +7,35 @@ import '../tasks/task_logic.dart';
 
 /// Version of the JSON the widgets read. Bump with any breaking change and
 /// update `ios/Shared/WidgetModels.swift`.
-const widgetSnapshotVersion = 1;
+const widgetSnapshotVersion = 2;
 
 /// Builds the data the Home Screen widgets render, for the active workspace.
 ///
 /// It holds raw dates rather than pre-computed "today" lists so the widgets
-/// stay correct after midnight without the app running: open tasks due within
-/// two weeks (or overdue, or in progress), tasks completed in the last eight
-/// days for the weekly stats, and upcoming project deadlines.
+/// stay correct after midnight without the app running:
+///
+/// - every open task (most pressing first, capped), so any list or project
+///   can be shown and acted on;
+/// - tasks completed in the last 12 weeks, for streaks and the activity grid;
+/// - every project that isn't completed, with its progress.
 Map<String, dynamic> buildWidgetSnapshot({
   required Workspace? workspace,
   required List<Task> tasks,
   required List<Project> projects,
   required DateTime now,
-  int maxOpenTasks = 80,
-  int maxCompletedTasks = 150,
+  int maxOpenTasks = 200,
+  int maxCompletedTasks = 400,
 }) {
   final today = Dates.dateOnly(now);
-  final openHorizon = Dates.addDays(today, 14);
-  final completedSince = Dates.addDays(today, -8);
+  final completedSince = Dates.addDays(today, -7 * 12);
   final projectsById = {for (final p in projects) p.id: p};
 
-  final open = sortTasks(
-    tasks.where(
-      (t) =>
-          t.isOpen &&
-          ((t.dueDay != null && !t.dueDay!.isAfter(openHorizon)) || t.status == TaskStatus.inProgress),
-    ),
-    TaskSort.smart,
-  ).take(maxOpenTasks);
+  final open = sortTasks(tasks.where((t) => t.isOpen), TaskSort.smart).take(maxOpenTasks);
 
-  final completed = (tasks.where((t) => t.isCompleted && t.completedAt != null && !t.completedAt!.isBefore(completedSince)).toList()
-        ..sort((a, b) => b.completedAt!.compareTo(a.completedAt!)))
-      .take(maxCompletedTasks);
+  final completed =
+      (tasks.where((t) => t.isCompleted && t.completedAt != null && !t.completedAt!.isBefore(completedSince)).toList()
+            ..sort((a, b) => b.completedAt!.compareTo(a.completedAt!)))
+          .take(maxCompletedTasks);
 
   Map<String, dynamic> taskJson(Task t) {
     final project = projectsById[t.projectId];
@@ -51,18 +47,19 @@ Map<String, dynamic> buildWidgetSnapshot({
       'priority': t.priority.wire,
       'status': t.status.wire,
       'completedAt': t.completedAt?.millisecondsSinceEpoch,
+      'projectId': project?.id,
       'project': project?.name,
       'projectColor': project?.color.wire,
       'repeats': t.recurrence != null,
     };
   }
 
-  final projectHorizon = Dates.addDays(today, 30);
-  final upcomingProjects =
-      projects
-          .where((p) => p.status != ProjectStatus.completed && p.dueDay != null && !p.dueDay!.isAfter(projectHorizon))
-          .toList()
-        ..sort((a, b) => a.dueDate!.compareTo(b.dueDate!));
+  // Due ones first (soonest first), then by name.
+  final activeProjects = projects.where((p) => p.status != ProjectStatus.completed).toList()
+    ..sort((a, b) {
+      final byDue = (a.dueDate ?? '9999').compareTo(b.dueDate ?? '9999');
+      return byDue != 0 ? byDue : a.name.toLowerCase().compareTo(b.name.toLowerCase());
+    });
 
   return {
     'version': widgetSnapshotVersion,
@@ -70,7 +67,7 @@ Map<String, dynamic> buildWidgetSnapshot({
     'workspace': workspace == null ? null : {'name': workspace.name, 'icon': workspace.icon},
     'tasks': [for (final t in [...open, ...completed]) taskJson(t)],
     'projects': [
-      for (final p in upcomingProjects)
+      for (final p in activeProjects)
         {
           'id': p.id,
           'name': p.name,
@@ -80,6 +77,7 @@ Map<String, dynamic> buildWidgetSnapshot({
           'priority': p.priority.wire,
           'progress': p.progress,
           'openTasks': p.openTaskCount,
+          'totalTasks': p.taskCount,
         },
     ],
   };
