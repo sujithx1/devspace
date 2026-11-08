@@ -39,12 +39,23 @@ lib/
 
 ## Home Screen widgets
 
-Four native WidgetKit widgets live in `ios/DevSpaceWidgets/` (SwiftUI), each in small, medium and large: **Today**, **Productivity**, **Quick Capture** and **Deadlines**.
+Native WidgetKit widgets live in `ios/DevSpaceWidgets/` (SwiftUI):
 
-- **Data.** Whenever tasks, projects, the workspace or the date change, the app writes a JSON snapshot (`lib/features/widgets/widget_snapshot.dart`) to the App Group `group.tech.magadh.devspace` and reloads WidgetKit. Widgets recompute Today and Overdue at each midnight, so they stay right even if the app doesn't run.
-- **Actions.** Ticking a task on a widget runs an App Intent without opening the app: the widget updates at once and the change is queued in the App Group. The app applies queued actions on launch and whenever it returns to the foreground.
-- **Links.** `devspace://open/<tab>[/task/<id>]`, `devspace://project/<id>`, `devspace://capture/task|project`. Siri and Shortcuts get **Add Task** and **Show Today**.
+| Widget | Sizes | What you can do without opening the app |
+| --- | --- | --- |
+| **Tasks** | small, medium, large, Lock Screen | Tick tasks off, start or pause the "up next" task, push it to tomorrow, move every overdue task to today, page through long lists, add a task. "Edit Widget" picks the list (Today, Upcoming, In Progress, All) and an optional project. |
+| **Project** | small, medium, large | Progress ring, tick tasks off, move overdue tasks to today, add a task to that project. "Edit Widget" picks the project; otherwise the next one due is shown. |
+| **Productivity** | small, medium, large, Lock Screen | Today's progress, streak, this week's completions and a 12-week activity grid. |
+| **Deadlines** | small, medium, large, Lock Screen | Task and project deadlines for two weeks; tick tasks off or push them to tomorrow. |
+| **Quick Capture** | small, medium, large | New task for today or tomorrow, new project, open My Tasks. |
+
+**Control Center** (iOS 18+) gets **New Task** and **Today's Tasks** buttons, which also work on the Lock Screen and the Action button. Siri and Shortcuts get **Add Task** and **Show Today**.
+
+- **Data.** Whenever tasks, projects, the workspace or the date change, the app writes a JSON snapshot (`lib/features/widgets/widget_snapshot.dart`, version 2) to the App Group `group.tech.magadh.devspace` and reloads WidgetKit. It holds every open task, completions from the last 12 weeks and every active project, so widgets work out Today, Overdue, streaks and paging themselves, and stay right after midnight without the app.
+- **Actions.** Widget buttons run App Intents (`ios/Shared/DevSpaceIntents.swift`) in the widget extension: the change is applied to the snapshot straight away, so every widget shows it, and queued in the App Group (one key per action, so the app and widgets never overwrite each other). The app saves queued changes to its database on launch and whenever it returns to the foreground; completing a repeating task there schedules the next one. Until then, a snapshot the app writes keeps any unsaved widget changes layered on top.
+- **Links.** `devspace://open/<tab>[/task/<id>]`, `devspace://project/<id>`, `devspace://capture/task[?due=today|tomorrow&project=<id>]`, `devspace://capture/project`.
 - **Xcode target.** `tool/add_widget_target.rb` adds or updates the extension target (it is idempotent): `GEM_HOME=$(brew --prefix cocoapods)/libexec ruby tool/add_widget_target.rb`. On a real device, both targets need your team selected and the App Group enabled.
+- **Simulator note.** On the iOS 27 simulator the Home Screen sometimes keeps showing a widget's previous look after you tap one of its buttons, until the widget is redrawn (swipe to another Home Screen page and back). The change itself is applied immediately; check this on a device.
 
 ## Roadmap
 
