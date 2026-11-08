@@ -55,8 +55,9 @@ end
 
 widget_group = group_for(project, 'DevSpaceWidgets')
 add_files(widget_group, [widget], %w[
-  DevSpaceWidgets.swift DevSpaceProvider.swift DayModel.swift WidgetStyle.swift
-  TodayTasksWidget.swift ProductivityWidget.swift QuickCaptureWidget.swift UpcomingDeadlinesWidget.swift
+  DevSpaceWidgets.swift DevSpaceProvider.swift DayModel.swift WidgetStyle.swift WidgetConfiguration.swift
+  TodayTasksWidget.swift ProjectWidget.swift ProductivityWidget.swift QuickCaptureWidget.swift
+  UpcomingDeadlinesWidget.swift DevSpaceControls.swift
   Info.plist DevSpaceWidgets.entitlements
 ])
 

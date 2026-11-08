@@ -1,6 +1,7 @@
 import Foundation
 
-/// Mirrors `lib/features/widgets/widget_snapshot.dart` (version 1).
+/// Mirrors `lib/features/widgets/widget_snapshot.dart` (version 2).
+/// Fields added after version 1 are optional so older snapshots still decode.
 struct WidgetSnapshot: Codable {
     var version: Int
     var generatedAt: Double
@@ -21,14 +22,17 @@ struct WidgetSnapshot: Codable {
         /// `HH:mm`.
         var time: String?
         var priority: String
+        /// `todo`, `in_progress` or `completed`.
         var status: String
         /// Epoch milliseconds.
         var completedAt: Double?
+        var projectId: String?
         var project: String?
         var projectColor: String?
         var repeats: Bool?
 
         var isCompleted: Bool { status == "completed" }
+        var isInProgress: Bool { status == "in_progress" }
         var isUrgent: Bool { priority == "urgent" || priority == "high" }
         var priorityRank: Int { ["low": 0, "medium": 1, "high": 2, "urgent": 3][priority] ?? 1 }
         var completedDate: Date? { completedAt.map { Date(timeIntervalSince1970: $0 / 1000) } }
@@ -43,6 +47,7 @@ struct WidgetSnapshot: Codable {
         var priority: String
         var progress: Double
         var openTasks: Int
+        var totalTasks: Int?
 
         var isUrgent: Bool { priority == "urgent" || priority == "high" }
     }

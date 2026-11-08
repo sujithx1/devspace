@@ -8,18 +8,13 @@ struct DayModel {
 
     let date: Date
     let snapshot: WidgetSnapshot
+    let today: String
     private let calendar = Calendar.current
-    private let today: String
 
     init(date: Date, snapshot: WidgetSnapshot) {
         self.date = date
         self.snapshot = snapshot
-        self.today = DayModel.iso(date)
-    }
-
-    static func iso(_ date: Date) -> String {
-        let c = Calendar.current.dateComponents([.year, .month, .day], from: date)
-        return String(format: "%04d-%02d-%02d", c.year ?? 0, c.month ?? 0, c.day ?? 0)
+        self.today = DevSpaceShared.iso(date)
     }
 
     static func parse(_ iso: String) -> Date? {
@@ -28,59 +23,124 @@ struct DayModel {
         return Calendar.current.date(from: DateComponents(year: parts[0], month: parts[1], day: parts[2]))
     }
 
-    private var open: [Task] { snapshot.tasks.filter { !$0.isCompleted } }
+    // MARK: Lists
 
-    var overdue: [Task] { sorted(open.filter { ($0.due ?? "9999") < today }) }
-    var dueToday: [Task] { sorted(open.filter { $0.due == today }) }
-    var completedToday: [Task] {
-        snapshot.tasks.filter { t in t.isCompleted && t.completedDate.map { calendar.isDate($0, inSameDayAs: date) } == true }
+    private func scoped(_ projectId: String?) -> [Task] {
+        guard let projectId else { return snapshot.tasks }
+        return snapshot.tasks.filter { $0.projectId == projectId }
     }
 
-    /// Overdue first, then today's, then what's already done today.
-    var agenda: [Task] { overdue + dueToday + completedToday }
-    var pending: Int { overdue.count + dueToday.count }
-    var nextTask: Task? { (overdue + dueToday).first }
+    func open(_ projectId: String? = nil) -> [Task] { sorted(scoped(projectId).filter { !$0.isCompleted }) }
+    func overdue(_ projectId: String? = nil) -> [Task] { open(projectId).filter { ($0.due ?? "9999") < today } }
+    func dueToday(_ projectId: String? = nil) -> [Task] { open(projectId).filter { $0.due == today } }
+    func inProgress(_ projectId: String? = nil) -> [Task] { open(projectId).filter(\.isInProgress) }
+
+    /// Finished today, most recent first.
+    func doneToday(_ projectId: String? = nil) -> [Task] {
+        scoped(projectId)
+            .filter { $0.isCompleted && $0.completedDate.map { calendar.isDate($0, inSameDayAs: date) } == true }
+            .sorted { ($0.completedAt ?? 0) > ($1.completedAt ?? 0) }
+    }
+
+    /// Open tasks due in the next [days] days, soonest first.
+    func upcoming(_ projectId: String? = nil, days: Int = 14) -> [Task] {
+        let horizon = DevSpaceShared.iso(calendar.date(byAdding: .day, value: days, to: date) ?? date)
+        return open(projectId).filter { guard let due = $0.due else { return false }; return due > today && due <= horizon }
+    }
+
+    /// Today's work: overdue, due today and undated tasks already started.
+    func todayOpen(_ projectId: String? = nil) -> [Task] {
+        open(projectId).filter { ($0.due.map { $0 <= today } ?? false) || ($0.due == nil && $0.isInProgress) }
+    }
+
+    /// The tasks a list shows. Today keeps what's been done today at the end
+    /// so it can be unticked.
+    func items(_ list: TaskListOption, _ projectId: String? = nil) -> [Task] {
+        switch list {
+        case .today: return todayOpen(projectId) + doneToday(projectId)
+        case .upcoming: return upcoming(projectId)
+        case .inProgress: return inProgress(projectId)
+        case .all: return open(projectId)
+        }
+    }
+
+    func pending(_ list: TaskListOption, _ projectId: String? = nil) -> Int {
+        items(list, projectId).filter { !$0.isCompleted }.count
+    }
 
     /// Share of today's work done, 0–1.
-    var progress: Double {
-        let total = pending + completedToday.count
-        return total == 0 ? 0 : Double(completedToday.count) / Double(total)
+    func progress(_ projectId: String? = nil) -> Double {
+        let done = doneToday(projectId).count
+        let total = done + todayOpen(projectId).count
+        return total == 0 ? 0 : Double(done) / Double(total)
     }
 
-    /// Open tasks due in the next seven days, soonest first.
-    var upcoming: [Task] {
-        let horizon = DayModel.iso(calendar.date(byAdding: .day, value: 7, to: date) ?? date)
-        return sorted(open.filter { guard let due = $0.due else { return false }; return due > today && due <= horizon })
+    /// What to work on now: a started task, else the most pressing open one.
+    func focus(_ list: TaskListOption, _ projectId: String? = nil) -> Task? {
+        let candidates = items(list, projectId).filter { !$0.isCompleted }
+        return candidates.first(where: \.isInProgress) ?? candidates.first
     }
 
-    // MARK: Week
+    // MARK: History
+
+    /// Completions per calendar day, keyed by start of day.
+    private var completionsByDay: [Date: Int] {
+        var counts: [Date: Int] = [:]
+        for t in snapshot.tasks where t.isCompleted {
+            if let done = t.completedDate { counts[calendar.startOfDay(for: done), default: 0] += 1 }
+        }
+        return counts
+    }
 
     private var weekStart: Date {
-        let weekday = calendar.component(.weekday, from: date) // Sunday = 1
-        let offset = (weekday + 5) % 7 // days since Monday
+        let offset = (calendar.component(.weekday, from: date) + 5) % 7 // days since Monday
         return calendar.startOfDay(for: calendar.date(byAdding: .day, value: -offset, to: date) ?? date)
     }
 
+    var todayIndex: Int { (calendar.component(.weekday, from: date) + 5) % 7 }
+
     /// Completions per day this week, Monday first.
     var weekCompletions: [Int] {
-        var days = Array(repeating: 0, count: 7)
-        for t in snapshot.tasks {
-            guard t.isCompleted, let done = t.completedDate else { continue }
-            let index = calendar.dateComponents([.day], from: weekStart, to: calendar.startOfDay(for: done)).day ?? -1
-            if (0..<7).contains(index) { days[index] += 1 }
-        }
-        return days
+        let counts = completionsByDay
+        return (0..<7).map { counts[calendar.date(byAdding: .day, value: $0, to: weekStart) ?? weekStart] ?? 0 }
     }
 
     var completedThisWeek: Int { weekCompletions.reduce(0, +) }
-    var todayIndex: Int { (calendar.component(.weekday, from: date) + 5) % 7 }
 
     /// Done this week vs. done plus still due by Sunday (including overdue).
     var weekRate: Double {
-        let sunday = DayModel.iso(calendar.date(byAdding: .day, value: 6, to: weekStart) ?? date)
-        let remaining = open.filter { ($0.due ?? "9999") <= sunday }.count
+        let sunday = DevSpaceShared.iso(calendar.date(byAdding: .day, value: 6, to: weekStart) ?? date)
+        let remaining = open().filter { ($0.due ?? "9999") <= sunday }.count
         let total = completedThisWeek + remaining
         return total == 0 ? 0 : Double(completedThisWeek) / Double(total)
+    }
+
+    /// Consecutive days with at least one completion, ending today (or
+    /// yesterday, so a streak isn't lost before today's first task).
+    var streak: Int {
+        let counts = completionsByDay
+        var day = calendar.startOfDay(for: date)
+        if counts[day] == nil { day = calendar.date(byAdding: .day, value: -1, to: day) ?? day }
+        var streak = 0
+        while counts[day] != nil {
+            streak += 1
+            day = calendar.date(byAdding: .day, value: -1, to: day) ?? day
+        }
+        return streak
+    }
+
+    /// Completions for the last [weeks] weeks: one column per week (oldest
+    /// first), Monday to Sunday; future days are nil.
+    func heatmap(weeks: Int) -> [[Int?]] {
+        let counts = completionsByDay
+        let startOfToday = calendar.startOfDay(for: date)
+        return (0..<weeks).map { w in
+            let monday = calendar.date(byAdding: .day, value: -7 * (weeks - 1 - w), to: weekStart) ?? weekStart
+            return (0..<7).map { d in
+                let day = calendar.date(byAdding: .day, value: d, to: monday) ?? monday
+                return day > startOfToday ? nil : (counts[day] ?? 0)
+            }
+        }
     }
 
     // MARK: Deadlines
@@ -90,38 +150,43 @@ struct DayModel {
         let title: String
         let date: Date
         let subtitle: String
-        let isProject: Bool
         let isUrgent: Bool
         let isOverdue: Bool
         let color: Color
         let url: URL
+        /// Set for task deadlines, which can be ticked off.
+        let task: Task?
+        /// Set for project deadlines.
+        let project: WidgetSnapshot.Project?
     }
 
     /// Overdue and upcoming task deadlines (two weeks) and project deadlines.
     var deadlines: [Deadline] {
-        let horizon = DayModel.iso(calendar.date(byAdding: .day, value: 14, to: date) ?? date)
-        let tasks: [Deadline] = open.compactMap { t in
+        let horizon = DevSpaceShared.iso(calendar.date(byAdding: .day, value: 14, to: date) ?? date)
+        let tasks: [Deadline] = open().compactMap { t in
             guard let due = t.due, due <= horizon, let day = DayModel.parse(due) else { return nil }
             return Deadline(
-                id: t.id, title: t.title, date: day, subtitle: t.project ?? "Task",
-                isProject: false, isUrgent: t.isUrgent, isOverdue: due < today,
-                color: due < today ? DS.danger : DS.accent, url: Links.task(t.id)
+                id: t.id, title: t.title, date: day, subtitle: t.project ?? "",
+                isUrgent: t.isUrgent, isOverdue: due < today,
+                color: due < today ? DS.danger : DS.accent, url: Links.task(t.id), task: t, project: nil
             )
         }
         let projects: [Deadline] = snapshot.projects.compactMap { p in
-            guard let due = p.due, let day = DayModel.parse(due) else { return nil }
+            guard p.status != "completed", let due = p.due, due <= horizon, let day = DayModel.parse(due) else { return nil }
             return Deadline(
                 id: p.id, title: p.name, date: day,
                 subtitle: p.openTasks == 0 ? "Project" : "Project · \(p.openTasks) open",
-                isProject: true, isUrgent: p.isUrgent, isOverdue: due < today,
-                color: DS.project(p.color), url: Links.project(p.id)
+                isUrgent: p.isUrgent, isOverdue: due < today,
+                color: DS.project(p.color), url: Links.project(p.id), task: nil, project: p
             )
         }
         // Same day: projects before tasks.
-        return (tasks + projects).sorted { ($0.date, $0.isProject ? 0 : 1) < ($1.date, $1.isProject ? 0 : 1) }
+        return (tasks + projects).sorted { ($0.date, $0.project == nil ? 1 : 0) < ($1.date, $1.project == nil ? 1 : 0) }
     }
 
-    /// "Today", "Tomorrow", "Yesterday", "Fri" or "Nov 12".
+    // MARK: Labels
+
+    /// "Today", "Tomorrow", "Yesterday", "Friday", "3 days ago" or "Nov 12".
     func relative(_ day: Date) -> String {
         let diff = calendar.dateComponents([.day], from: calendar.startOfDay(for: date), to: calendar.startOfDay(for: day)).day ?? 0
         switch diff {
@@ -134,15 +199,16 @@ struct DayModel {
         }
     }
 
-    /// Secondary line for a task row: overdue age, time, or project.
-    func detail(for task: Task) -> (text: String, isWarning: Bool)? {
+    /// Secondary line for a task row: overdue age, day, time and project.
+    func detail(for task: Task, showProject: Bool = true) -> (text: String, isWarning: Bool)? {
         if !task.isCompleted, let due = task.due, due < today, let day = DayModel.parse(due) {
             return ("Overdue · \(relative(day))", true)
         }
         var parts: [String] = []
+        if task.isInProgress { parts.append("In progress") }
+        if let due = task.due, due != today, let day = DayModel.parse(due) { parts.append(relative(day)) }
         if let time = task.time, let label = DayModel.timeLabel(time) { parts.append(label) }
-        if let due = task.due, due != today, let day = DayModel.parse(due) { parts.insert(relative(day), at: 0) }
-        if let project = task.project { parts.append(project) }
+        if showProject, let project = task.project { parts.append(project) }
         return parts.isEmpty ? nil : (parts.joined(separator: " · "), false)
     }
 
@@ -152,12 +218,35 @@ struct DayModel {
         return d.formatted(date: .omitted, time: .shortened)
     }
 
-    /// Overdue before due, timed before untimed, then by priority.
+    /// In progress first, then by due date and time (undated last), then priority.
     private func sorted(_ tasks: [Task]) -> [Task] {
         tasks.sorted { a, b in
+            if a.isInProgress != b.isInProgress { return a.isInProgress }
             if a.due != b.due { return (a.due ?? "9999") < (b.due ?? "9999") }
             if a.time != b.time { return (a.time ?? "99:99") < (b.time ?? "99:99") }
             return a.priorityRank > b.priorityRank
         }
     }
+}
+
+/// One page of a widget's list, advanced by `NextPageIntent`.
+struct Page<Item> {
+    let items: [Item]
+    let index: Int
+    let count: Int
+    let total: Int
+    let key: String
+    let size: Int
+
+    init(_ all: [Item], size: Int, key: String) {
+        self.size = max(size, 1)
+        self.key = key
+        total = all.count
+        count = max(1, Int((Double(all.count) / Double(self.size)).rounded(.up)))
+        index = DevSpaceShared.page(key) % count
+        items = Array(all.dropFirst(index * self.size).prefix(self.size))
+    }
+
+    var isPaged: Bool { count > 1 }
+    var rangeLabel: String { "\(index * size + 1)–\(index * size + items.count) of \(total)" }
 }

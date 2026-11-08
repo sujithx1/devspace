@@ -6,11 +6,10 @@ struct QuickCaptureWidget: Widget {
 
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: kind, provider: DevSpaceProvider()) { entry in
-            QuickCaptureView(entry: entry)
-                .containerBackground(DS.background, for: .widget)
+            QuickCaptureView(entry: entry).devSpaceBackground()
         }
         .configurationDisplayName("Quick Capture")
-        .description("Add a task or project in one tap, or jump into DevSpace.")
+        .description("Add a task for today or tomorrow, start a project, or jump into DevSpace.")
         .supportedFamilies([.systemSmall, .systemMedium, .systemLarge])
     }
 }
@@ -22,12 +21,12 @@ private struct CaptureAction: Identifiable {
     let symbol: String
     let tint: Color
 
-    static let all = [
-        CaptureAction(id: "capture/task", title: "New Task", symbol: "checkmark.circle.fill", tint: DS.accent),
-        CaptureAction(id: "capture/project", title: "New Project", symbol: "square.stack.3d.up.fill", tint: DS.project("violet")),
-        CaptureAction(id: "open/tasks", title: "Today", symbol: "sun.max.fill", tint: DS.warning),
-        CaptureAction(id: "open/home", title: "Open", symbol: "chevron.left.forwardslash.chevron.right", tint: DS.secondary),
-    ]
+    static let newTask = CaptureAction(id: Links.captureTask(due: "today"), title: "Today", symbol: "plus.circle.fill", tint: DS.accent)
+    static let tomorrow = CaptureAction(id: Links.captureTask(due: "tomorrow"), title: "Tomorrow", symbol: "sunrise.fill", tint: DS.warning)
+    static let project = CaptureAction(id: "capture/project", title: "Project", symbol: "square.stack.3d.up.fill", tint: DS.project("violet"))
+    static let tasks = CaptureAction(id: "open/tasks", title: "My Tasks", symbol: "checklist", tint: DS.success)
+
+    static let all = [newTask, tomorrow, project, tasks]
 }
 
 struct QuickCaptureView: View {
@@ -48,6 +47,7 @@ struct QuickCaptureView: View {
                 Image(systemName: action.symbol)
                     .font(.system(size: compact ? 17 : 20, weight: .semibold))
                     .foregroundStyle(action.tint)
+                    .widgetAccentable()
                 Text(action.title)
                     .font(compact ? .system(size: 10, weight: .semibold) : .footnote.weight(.semibold))
                     .foregroundStyle(DS.primary)
@@ -56,10 +56,10 @@ struct QuickCaptureView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: compact ? .center : .leading)
             .padding(compact ? 4 : 12)
-            .background(DS.fill, in: RoundedRectangle(cornerRadius: compact ? 14 : 16, style: .continuous))
+            .background(action.tint.opacity(0.1), in: RoundedRectangle(cornerRadius: compact ? 14 : 16, style: .continuous))
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(action.title)
+        .accessibilityLabel(action.id.hasPrefix("capture/task") ? "New task for \(action.title.lowercased())" : action.title)
     }
 
     private var small: some View {
@@ -71,8 +71,20 @@ struct QuickCaptureView: View {
     }
 
     private var medium: some View {
-        HStack(spacing: 8) {
-            ForEach(CaptureAction.all) { tile($0, compact: false) }
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                WidgetHeader(symbol: "plus.circle.fill", title: "New task or project")
+                Spacer()
+                if let workspace = entry.snapshot?.workspace {
+                    Text("\(workspace.icon) \(workspace.name)")
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(DS.secondary)
+                        .lineLimit(1)
+                }
+            }
+            HStack(spacing: 8) {
+                ForEach(CaptureAction.all) { tile($0, compact: false) }
+            }
         }
     }
 
@@ -92,26 +104,27 @@ struct QuickCaptureView: View {
                 GridRow { tile(CaptureAction.all[0], compact: false); tile(CaptureAction.all[1], compact: false) }
                 GridRow { tile(CaptureAction.all[2], compact: false); tile(CaptureAction.all[3], compact: false) }
             }
-            .frame(height: 150)
+            .frame(height: 140)
             if let day = entry.day {
+                let next = Array(day.items(.today).filter { !$0.isCompleted }.prefix(4))
                 SectionLabel(text: "Up next")
-                let next = Array((day.overdue + day.dueToday + day.upcoming).prefix(3))
                 if next.isEmpty {
-                    Text("Nothing scheduled. Enjoy the calm.")
+                    Text("Nothing left today. Enjoy the calm.")
                         .font(.subheadline)
                         .foregroundStyle(DS.secondary)
                 } else {
-                    VStack(alignment: .leading, spacing: 9) {
+                    VStack(alignment: .leading, spacing: 5) {
                         ForEach(next) { TaskRow(task: $0, day: day) }
                     }
                 }
             }
             Spacer(minLength: 0)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 }
 
-#Preview(as: .systemSmall) {
+#Preview(as: .systemMedium) {
     QuickCaptureWidget()
 } timeline: {
     DevSpaceEntry(date: .now, snapshot: .sample)

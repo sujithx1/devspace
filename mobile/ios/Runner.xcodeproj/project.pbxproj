@@ -11,6 +11,7 @@
 		0C2A24DDE39F08C39957B2EA /* WidgetModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B1BC81FA66F149A1A3B6A7C /* WidgetModels.swift */; };
 		1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */ = {isa = PBXBuildFile; fileRef = 1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */; };
 		179CDDC2799E01D848F71881 /* ProductivityWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF043B7A94B3464BC413C99B /* ProductivityWidget.swift */; };
+		20D80FE6191E9AAE65414505 /* WidgetConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AB22680708B20B9794C974A /* WidgetConfiguration.swift */; };
 		2758A0181E9D2A6466AAF5F6 /* WidgetStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC672873D817877888E0A524 /* WidgetStyle.swift */; };
 		2BE859FE1E4B221DD753935B /* DevSpaceShared.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A3AF1A12A575D257062F7C5 /* DevSpaceShared.swift */; };
 		331C808B294A63AB00263BE5 /* RunnerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 331C807B294A618700263BE5 /* RunnerTests.swift */; };
@@ -36,6 +37,8 @@
 		D0FD36C4C53D2CBDE9048541 /* DevSpaceProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9AABC920ADBFB1C1DFCE2D6 /* DevSpaceProvider.swift */; };
 		D265E7B2565EDD10E3BACD29 /* WidgetModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B1BC81FA66F149A1A3B6A7C /* WidgetModels.swift */; };
 		DE1B82541E0FA0564A873B64 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 196E2188104456A053C9A6E4 /* Foundation.framework */; };
+		F1F96671FC5DE529E1A0E470 /* DevSpaceControls.swift in Sources */ = {isa = PBXBuildFile; fileRef = 97901E61C0E01AFE6D3342CD /* DevSpaceControls.swift */; };
+		F51936150FB724E5FB017B48 /* ProjectWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDCED242E3980C9A3EFE2D77 /* ProjectWidget.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -86,6 +89,7 @@
 		19683E2BFD9C6D58A3D24640 /* DevSpaceIntents.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DevSpaceIntents.swift; sourceTree = "<group>"; };
 		196E2188104456A053C9A6E4 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
 		1A3AF1A12A575D257062F7C5 /* DevSpaceShared.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DevSpaceShared.swift; sourceTree = "<group>"; };
+		1AB22680708B20B9794C974A /* WidgetConfiguration.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WidgetConfiguration.swift; sourceTree = "<group>"; };
 		1FF5BAADFC3D9A6F629ADDED /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		20774BD0F078EDE3B6830C25 /* WidgetBridge.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WidgetBridge.swift; sourceTree = "<group>"; };
 		2D0677E20C3A0A99BA23A37F /* DevSpaceWidgets.entitlements */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.entitlements; path = DevSpaceWidgets.entitlements; sourceTree = "<group>"; };
@@ -105,6 +109,7 @@
 		8FEDE6A81E52C8AE32EB28FD /* QuickCaptureWidget.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = QuickCaptureWidget.swift; sourceTree = "<group>"; };
 		9740EEB21CF90195004384FC /* Debug.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; name = Debug.xcconfig; path = Flutter/Debug.xcconfig; sourceTree = "<group>"; };
 		9740EEB31CF90195004384FC /* Generated.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; name = Generated.xcconfig; path = Flutter/Generated.xcconfig; sourceTree = "<group>"; };
+		97901E61C0E01AFE6D3342CD /* DevSpaceControls.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DevSpaceControls.swift; sourceTree = "<group>"; };
 		97C146EE1CF9000F007C117D /* Runner.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Runner.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		97C146FB1CF9000F007C117D /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
 		97C146FD1CF9000F007C117D /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -117,6 +122,7 @@
 		CC672873D817877888E0A524 /* WidgetStyle.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WidgetStyle.swift; sourceTree = "<group>"; };
 		D5327D78AA62BDB2F4786B8F /* DevSpaceWidgets.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DevSpaceWidgets.swift; sourceTree = "<group>"; };
 		D9AABC920ADBFB1C1DFCE2D6 /* DevSpaceProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DevSpaceProvider.swift; sourceTree = "<group>"; };
+		DDCED242E3980C9A3EFE2D77 /* ProjectWidget.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ProjectWidget.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -162,6 +168,9 @@
 				54F275D22CDD7B98796957DE /* UpcomingDeadlinesWidget.swift */,
 				6BD4EDDA92661C496CAB0F50 /* Info.plist */,
 				2D0677E20C3A0A99BA23A37F /* DevSpaceWidgets.entitlements */,
+				1AB22680708B20B9794C974A /* WidgetConfiguration.swift */,
+				DDCED242E3980C9A3EFE2D77 /* ProjectWidget.swift */,
+				97901E61C0E01AFE6D3342CD /* DevSpaceControls.swift */,
 			);
 			name = DevSpaceWidgets;
 			path = DevSpaceWidgets;
@@ -441,6 +450,9 @@
 				2BE859FE1E4B221DD753935B /* DevSpaceShared.swift in Sources */,
 				D265E7B2565EDD10E3BACD29 /* WidgetModels.swift in Sources */,
 				AF8C8E01E7C2E3F4D098D4DE /* DevSpaceIntents.swift in Sources */,
+				20D80FE6191E9AAE65414505 /* WidgetConfiguration.swift in Sources */,
+				F51936150FB724E5FB017B48 /* ProjectWidget.swift in Sources */,
+				F1F96671FC5DE529E1A0E470 /* DevSpaceControls.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
