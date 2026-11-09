@@ -13,6 +13,12 @@ flutter run -d "iPhone 17"
 
 Debug builds have to be started by `flutter run` or Xcode. iOS won't launch a debug Flutter build on its own.
 
+## Docs
+
+- [Development](docs/DEVELOPMENT.md): setup, tests, schema changes, the widget target and simulator debugging
+- [Data model](docs/DATA_MODEL.md): tables, delete rules, validation and repeating tasks
+- [Widgets](docs/WIDGETS.md): how the app and the widget extension share data and actions
+
 ## Architecture
 
 ```
@@ -64,7 +70,6 @@ Native WidgetKit widgets live in `ios/DevSpaceWidgets/` (SwiftUI):
 | 1 | Project setup, design system, navigation, local database, workspace management | Done |
 | 2 | Home screen, task management, task detail | Done |
 | 3 | WidgetKit widgets, App Group, App Intents, deep links | Done |
-
 | 4 | Notes, rich-text editor, autosave | Next |
 | 5 | Projects, documentation | |
 | 6 | Drawing and whiteboard | |
